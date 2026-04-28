@@ -12,14 +12,32 @@ def lambda_handler(event, context):
     try:
         table = dynamodb.Table(TABLE_NAME)
         # GET RequestId from path parameters
+        request_id = event.get('pathParameters', {}).get('requestId')
 
-        if not request_Id:
+        if not request_id:
             return {
                 'statusCode': 400,
                 'headers': { 'Access-Control-Allow-Origin': '*' },
                 'body': json.dumps({'error': 'Missing requestId in path'})
             }
         
+        response = table.get_item(
+            Key = {'requestId': request_id}
+        )
+
+        if 'Item' not in response:
+            return {
+                'statusCode': 404,
+                'headers': { 'Access-Control-Allow-Origin': '*' },
+                'body': json.dumps({'error': 'Request not found'})
+            }
+        
+        item = response['Item']
+
+         # Convert Decimal types to float/int for JSON serialization
+        for k, v in item.items():
+            if str(type(v)) == "<class 'decimal.Decimal'>":
+                 item[k] = float(v)
 
 
     except Exception as e:
